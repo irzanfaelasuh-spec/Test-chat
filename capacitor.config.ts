@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.veyra.chat',
+  appId: 'com.veyra.chat',
   appName: 'Veyra',
   webDir: 'dist',
   android: {
