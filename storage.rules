@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function chatDoc(conversationId) {
+      return firestore.get(/databases/(default)/documents/conversations/$(conversationId));
+    }
+    function isBlocked(a, b) {
+      return firestore.exists(/databases/(default)/documents/users/$(a)/blocks/$(b));
+    }
+    function canAccessChat(conversationId) {
+      let data = chatDoc(conversationId).data;
+      let other = data.members[0] == request.auth.uid ? data.members[1] : data.members[0];
+      return signedIn() && data.members.hasAny([request.auth.uid])
+        && (data.type != 'direct' || (!isBlocked(request.auth.uid, other) && !isBlocked(other, request.auth.uid)));
+    }
+    match /avatars/{uid}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    match /chats/{conversationId}/{uid}/{fileName} {
+      allow read: if canAccessChat(conversationId);
+      allow write: if signedIn() && request.auth.uid == uid && canAccessChat(conversationId)
+        && request.resource.size < 36 * 1024 * 1024
+        && request.resource.contentType.matches('(image|video|audio|application|text)/.*');
+    }
+    match /statuses/{uid}/{fileName} {
+      allow read: if signedIn() && (
+        request.auth.uid == uid ||
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)/contacts/$(uid))
+      );
+      allow write: if signedIn() && request.auth.uid == uid
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('(image|video)/.*');
+    }
+  }
+}
