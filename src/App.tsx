@@ -557,7 +557,7 @@ function ChatView({ conversation, user, profile, title, avatar, contacts, profil
     if (isVideo && file.size > 80 * 1024 * 1024) return notify('Video sumber maksimal 80 MB agar tidak membebani perangkat.', 'error');
     if (!isVideo && file.size > 20 * 1024 * 1024) return notify('File maksimal 20 MB.', 'error');
     let blob: Blob = file;
-    let type = fileMode;
+    let type: ChatMessage['type'] = fileMode;
     if (file.type.startsWith('image/')) {
       if (fileMode !== 'sticker') { blob = await optimizeImage(file, 1600, 0.78); type = 'image'; }
       else type = 'sticker';
